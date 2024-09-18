@@ -2,21 +2,34 @@ package main
 
 import (
 	"flag"
-	"github.com/rshelekhov/read-it-later-bot/clients/telegram"
+	tgClient "github.com/rshelekhov/read-it-later-bot/clients/telegram"
+	"github.com/rshelekhov/read-it-later-bot/consumer/event_consumer"
+	"github.com/rshelekhov/read-it-later-bot/events/telegram"
+	"github.com/rshelekhov/read-it-later-bot/storage/fs"
 	"log"
 )
 
-// TODO: move it to flag
-const tgBotHost = "api.telegram.org"
+// TODO: move it to config
+const (
+	tgBotHost   = "api.telegram.org"
+	storagePath = "storage"
+	batchSize   = 100
+)
 
 func main() {
-	tgClient := telegram.NewClient(tgBotHost, mustToken())
 
-	// fetcher = fetcher.New(tgClient)
+	eventProcessor := telegram.New(
+		tgClient.NewClient(tgBotHost, mustToken()),
+		fs.New(storagePath),
+	)
 
-	// processor = processor.New(tgClient)
+	log.Print("Starting server...")
 
-	// consumer.Start(fetcher, processor)
+	consumer := event_consumer.New(eventProcessor, eventProcessor, batchSize)
+
+	if err := consumer.Start(); err != nil {
+		log.Fatal("service is failed: ", err)
+	}
 }
 
 func mustToken() string {
